@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <wiringPi.h>
 #include <curl/curl.h>
+#include <math.h>
 #include "ifttt.h"
 #include <time.h>
 
@@ -67,13 +68,30 @@ int alarmOff(int state){
 }
 
 int alarmArming(int state){
-	int i;
+	
+	int terminate;
+	time_t start, end;
+	double elapsed;
+	start = time(NULL);
+	terminate = 1;
 	if(state == ALARM_ARMING){
         	printf("Case 2 entered");
 		digitalWrite(4, LOW);
-                for(i=0;i<5;i++){
-                	digitalWrite(2, LOW); delay(1000);
-                        digitalWrite(2, HIGH); delay(1000);
+
+                while(terminate){
+			end = time(NULL);
+			elapsed = difftime(end, start);
+			if (elapsed <= 10.0){
+				if(fmod(elapsed, 2) == 0){
+                			digitalWrite(2, HIGH);
+				}
+				else{
+                        		digitalWrite(2, LOW);
+				} 
+			}
+			else{
+				terminate = 0;
+			}
                 }
                 return ALARM_ARMED;
         }
@@ -103,36 +121,66 @@ int alarmArmed(int state){
 }
 
 int alarmTriggered(int state){
-	int j;
-	digitalWrite(4, LOW);
-	for(j=0;(j<5) && (digitalRead(1) == 1);j++){
-	printf("ALARM TRIGGERED");
-	digitalWrite(2, HIGH);
-	digitalWrite(0, HIGH);
-	delay(1000);
-	digitalWrite(2, LOW);
-	digitalWrite(0, LOW);
-	delay(1000);
+
+	int terminate;
+	time_t start, end;
+	double elapsed;
+	start = time(NULL);
+	terminate = 1;
+	
+
+	while(terminate){
+	printf("ALARM TRIGGERED\n");
+	end = time(NULL);
+	elapsed = difftime(end, start);
+		if(elapsed <= 10.0 && digitalRead(1) == 1){
+			if(fmod(elapsed, 2) == 0){
+				digitalWrite(2, HIGH);
+				digitalWrite(0, HIGH);
+			}
+			else{
+				digitalWrite(2, LOW);
+				digitalWrite(0, LOW);
+			}
+		}	
+		else if(elapsed >= 10.0){
+			terminate = 0;
+			return ALARM_SOUNDING;
+		}	
+		else{
+			terminate = 0;
+			return ALARM_OFF;
+		}
 	}
-	if(j==5){
-		return ALARM_SOUNDING;
-	}
-	return ALARM_OFF;		
+	
+	return 0;
 }
 
 int alarmSounding(int state){
+
+        int terminate;
+        time_t start, end;
+        double elapsed;
+        start = time(NULL);
+        terminate = 1;
+
 	printf("ALARM SOUNDING\n");
-	ifttt("https://maker.ifttt.com/trigger/alarm_triggered/with/key/bYHA88jvpwt5C8E5p_m9j","Tested","1","2");
+	ifttt("https://maker.ifttt.com/trigger/alarm_triggered/with/key/bYHA88jvpwt5C8E5p_m9jx","Tested","1","2");
 	if(state == ALARM_SOUNDING){
-		while(digitalRead(1) == 1){
-			digitalWrite(2, HIGH);
-			digitalWrite(0, HIGH);
-			digitalWrite(4, HIGH);
-			delay(2000);
-			digitalWrite(2, LOW);
-			digitalWrite(0, LOW);
-			digitalWrite(4, LOW);
-			delay(2000);	
+		while(terminate && digitalRead(1) == 1){
+			end = time(NULL);
+			elapsed = difftime(end, start);
+			
+			if(fmod(elapsed, 3) == 0){
+				digitalWrite(2, HIGH);
+				digitalWrite(0, HIGH);
+				digitalWrite(4, HIGH);
+			}
+			else{
+				digitalWrite(2, LOW);
+				digitalWrite(0, LOW);
+				digitalWrite(4, LOW);
+			}
 		}
 	
 		return ALARM_OFF;

@@ -1,9 +1,8 @@
 CC=gcc
 CFLAGS=-lWarn -pedantic
 
-HouseAlarm: 	HouseAlarm.o 
-	$(CC) HouseAlarm.o -L. -lwiringPi -lmyifttt -lcurl -o HouseAlarm
-
+HouseAlarm: 	HouseAlarm.o libmyifttt.a 
+	$(CC) HouseAlarm.o -L. -lwiringPi -lm -lmyifttt -lcurl -o HouseAlarm
 
 tester: tester.o libmyifttt.a
 	$(CC) tester.o -L. -lmyifttt -lcurl -o tester
